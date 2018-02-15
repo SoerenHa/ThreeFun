@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+
+    <title>Foo</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="http://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+        crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+        crossorigin="anonymous">
+    <script src="http://threejs.org/build/three.min.js"></script>
+        
+</head>
+
+<body>
+    <div id="container"></div>
+    <script src="js/three.min.js"></script>
+    <script id="vertexShader" type="x-shader/x-vertex">
+        void main() {
+            gl_Position = vec4( position, 1.0 );
+        }
+    </script>
+    <script id="fragmentShader" type="x-shader/x-fragment">
+        #ifdef GL_ES
+        precision mediump float;
+        #endif
+        
+        #define PI 3.14159265359
+        
+        uniform vec2 u_resolution;
+        uniform vec2 u_mouse;
+        uniform float u_time;
+        
+        float getY (float x) {
+            return 1.0 - pow(float(x - 0.5), 2.0) * 4.0;
+            return sqrt(sin(PI * x));
+        }
+        
+        float getY2 (float x) {
+            return 1.0 - pow(float(x - 0.5), 2.0) * 8.0 - 0.5;
+            return sqrt(sin(PI * x * 2.0 - 1.6)) / 2.0;
+        }
+        
+        float getDist (vec2 v1, vec2 v2) {
+            return sqrt( pow(v1.x - v2.x, 2.0) + pow(v1.y - v2.y, 2.0) );
+        }
+        
+        float getMinDist (vec2 foo) {
+            float dist = 2.0;
+            for ( int x = 0; x <= 1600; x++ ) {
+                float y = getY(float(x) / u_resolution.x);
+                vec2 bar = vec2(float(x) / u_resolution.x, float(y));
+                float tmpDist = getDist(foo, bar);
+        
+                if ( tmpDist < dist ) {
+                    dist = tmpDist;
+                }
+            }
+        
+            return fract((dist * u_time));
+        }
+        
+        vec3 getRainbowColor (float dist) {
+            float r = pow(max(0.0, abs(dist - 3.0 / 6.0) * 6.0 - 1.0), 1.0);
+            float g = 1.0 - pow(max(0.0, abs(dist - 2.0 / 6.0) * 6.0 - 1.0), 1.0);
+            float b = 1.0 - pow(max(0.0, abs(dist - 4.0 / 6.0) * 6.0 - 1.0), 1.0);
+        
+            vec3 color = vec3(r, g, b);
+        
+            return color;
+        }
+        
+        void main() {
+            vec2 st = vec2(0.0, 0.0);
+            st.x = gl_FragCoord.x/u_resolution.x;
+            st.y = gl_FragCoord.y/u_resolution.y;
+        
+            if ( st.y <= getY(st.x) && st.y >= getY2(st.x) ) {
+                float dist = getMinDist(st);
+                vec3 color = getRainbowColor(dist);
+                gl_FragColor = vec4(color, 1.0);
+            } else {
+                gl_FragColor = vec4(0.0, 1.0, 1.0, 1.0);
+            }
+        }
+    </script>
+    <script>
+        var container;
+        var camera, scene, renderer;
+        var uniforms;
+
+        init();
+        animate();
+
+        function init() {
+            container = document.getElementById('container');
+
+            camera = new THREE.Camera();
+            camera.position.z = 1;
+
+            scene = new THREE.Scene();
+
+            var geometry = new THREE.PlaneBufferGeometry(2, 2);
+
+            uniforms = {
+                u_time: { type: "f", value: 1.0 },
+                u_resolution: { type: "v2", value: new THREE.Vector2() },
+                u_mouse: { type: "v2", value: new THREE.Vector2() }
+            };
+
+            var material = new THREE.ShaderMaterial({
+                uniforms: uniforms,
+                vertexShader: $('#vertexShader').text(),
+                fragmentShader: $('#fragmentShader').text()
+            });
+
+            var mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
+
+            renderer = new THREE.WebGLRenderer();
+            renderer.setPixelRatio(window.devicePixelRatio);
+
+            renderer.setSize(1600, 800);
+            uniforms.u_resolution.value.x = 1600;
+            uniforms.u_resolution.value.y = renderer.domElement.height;
+
+            container.appendChild(renderer.domElement);
+
+            // onWindowResize();
+            // window.addEventListener('resize', onWindowResize, false);
+
+            document.onmousemove = function (e) {
+                uniforms.u_mouse.value.x = e.pageX
+                uniforms.u_mouse.value.y = e.pageY
+            }
+        }
+
+        function onWindowResize(event) {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            uniforms.u_resolution.value.x = renderer.domElement.width;
+            uniforms.u_resolution.value.y = renderer.domElement.height;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            render();
+        }
+
+        function render() {
+            uniforms.u_time.value += 0.05;
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+
+</html>
