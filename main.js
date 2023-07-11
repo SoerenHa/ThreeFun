@@ -47,7 +47,7 @@ class Rainbow {
         this.renderer = new THREE.WebGLRenderer();
         this.renderer.setPixelRatio(window.devicePixelRatio);
 
-        this.renderer.setSize(1600, 800);
+        this.renderer.setSize(800, 800);
         this.uniforms.u_resolution.value.x = 1600;
         this.uniforms.u_resolution.value.y = this.renderer.domElement.height;
 
@@ -63,8 +63,8 @@ class Rainbow {
 
     animate() {
         this.render();
-        // this.uniforms.u_time.value += .5;
-        // requestAnimationFrame(() => this.animate());
+        this.uniforms.u_time.value += .01;
+        requestAnimationFrame(() => this.animate());
     }
 
     render() {
